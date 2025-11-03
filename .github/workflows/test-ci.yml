@@ -1,4 +1,4 @@
-name: Run Tests
+name: CI - Node.js Project
 
 on:
   push:
@@ -8,19 +8,44 @@ on:
 
 jobs:
   test:
+    name: Test on Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]  # test on multiple Node.js versions
 
     steps:
-      - name: Checkout code
+      # 1. Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # 2. Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
 
+      # 3. Cache node_modules for faster builds
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+
+      # 4. Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # 5. Run linter
+      - name: Lint code
+        run: npm run lint
+
+      # 6. Run tests
       - name: Run tests
         run: npm test
+
+      # 7. Optional: show Node version
+      - name: Show Node version
+        run: node -v
